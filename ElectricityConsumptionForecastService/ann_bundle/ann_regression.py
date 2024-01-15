@@ -5,6 +5,7 @@ from ElectricityConsumptionForecastService.ann_bundle.ann_base import AnnBase
 from tensorflow import keras
 
 MODEL_NAME = 'current_model'
+FILE_PATH = f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}.keras"
 
 class AnnRegression(AnnBase):
     def get_model(self):
@@ -35,7 +36,7 @@ class AnnRegression(AnnBase):
         self.model.compile(loss=self.cost_function, optimizer=self.optimizer)
         self.trainX = trainX
         self.model.fit(trainX, trainY, epochs=self.epoch_number, batch_size=self.batch_size_number, verbose=self.verbose)
-        self.model.save(f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}.keras")
+        self.model.save(FILE_PATH)
 
     def use_current_model(self, path, trainX):
         self.trainX = trainX
@@ -48,5 +49,5 @@ class AnnRegression(AnnBase):
 
     def compile_fit_predict(self, trainX, trainY, testX):
         # self.compile_and_fit(trainX, trainY)
-        self.use_current_model(f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}.keras", trainX)
+        self.use_current_model(FILE_PATH, trainX)
         return self.get_predict(testX)

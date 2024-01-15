@@ -2,7 +2,7 @@ from re import VERBOSE
 
 
 EPOCH_NUMBER = 100
-BATCH_SIZE_NUMBER = 1
+BATCH_SIZE_NUMBER = 20
 COST_FUNCTION = 'mean_squared_error'
 OPTIMIZER = 'adam'
 KERNEL_INITIALIZER = 'normal'

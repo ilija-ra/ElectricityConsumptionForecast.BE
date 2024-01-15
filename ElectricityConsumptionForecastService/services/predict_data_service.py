@@ -1,6 +1,6 @@
-import time
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 import statsmodels.api as sm
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
@@ -11,10 +11,10 @@ from ElectricityConsumptionForecastRepository.repositories.train_data_repository
 from ElectricityConsumptionForecastRepository.repositories.weather_data_repository import WeatherRepository
 from ElectricityConsumptionForecastRepository.repositories.predict_values_repository import PredictRepository
 from ElectricityConsumptionForecastService.ann_bundle.ann_regression import AnnRegression
-from ElectricityConsumptionForecastService.ann_bundle.custom_preparer import CustomPreparer
-from ElectricityConsumptionForecastService.ann_bundle.scorer import Scorer
 
 SHARE_FOR_TRAINING = 0.85
+MODEL_NAME = 'primary_neural_network'
+FILE_PATH = f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}11.keras"
 
 class PredictService:
     def __init__(self, repository=None, service=None):
@@ -46,16 +46,16 @@ class PredictService:
             x_inter_test, y_test = preparing_predict_data_regression(data)
 
             # Testiranje
-            y_predicted = regression_model.predict(x_inter_test)
-            prediction_mape = model_evaluation(y_test, y_predicted)
+            # y_predicted = regression_model.predict(x_inter_test)
+            # prediction_mape = model_evaluation(y_test, y_predicted)
 
-            results=pd.concat([pd.DataFrame(x_test_datetime.values), pd.DataFrame(y_predicted)], axis=1)
-            results.columns = ['datetime', 'predicted_load']
+            # results=pd.concat([pd.DataFrame(x_test_datetime.values), pd.DataFrame(y_predicted)], axis=1)
+            # results.columns = ['datetime', 'predicted_load']
 
-            csv_result = self.predict_repository.save_results_to_csv(results)
-            db_result = self.predict_repository.save_results_to_db(results)
+            # csv_result = self.predict_repository.save_results_to_csv(results)
+            # db_result = self.predict_repository.save_results_to_db(results)
 
-            return MessageResponse(success=True,message=f"{csv_result['message']} {db_result['message']}" ,result=prediction_mape).to_json()
+            # return MessageResponse(success=True,message=f"{csv_result['message']} {db_result['message']}" ,result=prediction_mape).to_json()
         
         except Exception as e:
             return MessageResponse(success=False,message="Failed to predict data with regression", errors=str(e)).to_json()
@@ -73,32 +73,27 @@ class PredictService:
             data = data[(data['datetime'] >= start_date) & (data['datetime'] <= end_date)]
             data.drop('datetime', axis=1, inplace=True)
 
-            y_test = data['Load']
-            X_test = data.drop('Load', axis=1)
+            target = data['Load']
+            features = data.drop('Load', axis = 1)
 
-            # Assuming reshaping is necessary based on your training code
-            # X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
+            X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.15, random_state=42)
+
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+            X_test_scaled = scaler.transform(X_test)
 
             ann_regression = AnnRegression()
-            model = ann_regression.get_model_from_path("ElectricityConsumptionForecastRepository/training_models/neural_network/neural_network.keras")
-            
-            # time_begin = time.time()
-            X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
-            # return MessageResponse(success=True, message="Prediction Successfully executed").to_json()
-            y_predicted = model.predict(X_test)
+            model = ann_regression.get_model_from_path(FILE_PATH)
+            y_predicted = model.predict(X_test_scaled)
 
-            y_predicted = y_predicted.ravel()
-            y_test = y_test.ravel()
+            y_test = tf.cast(y_test, dtype=tf.float32)
+            y_predicted = tf.cast(y_predicted, dtype=tf.float32)
 
-            # return MessageResponse(success=True, message="Prediction Successfully executed").to_json()
-            # time_end = time.time()
             mape_value = mean_absolute_percentage_error(y_test, y_predicted)
+
             print(mape_value)
-            # scorer = Scorer()
-            # trainScore = scorer.get_score(y_predicted, y_test)
-            # print('Train Score: %.2f MAPE' % (trainScore))
-            
-            return MessageResponse(success=True, message="Prediction Successfully executed", result=mape_value).to_json()
+
+            return MessageResponse(success=True, message="Prediction Successfully executed").to_json()
         except Exception as e:
             return MessageResponse(success=False, message="Failed to predict data with neural network", errors=str(e)).to_json()
 
@@ -132,10 +127,6 @@ def preparing_predict_data_regression(data: pd.DataFrame):
     x_inter_test = poly.transform(x_test_std)
 
     return x_inter_test, y_test
-
-def model_evaluation(y, y_predicted):
-    mape = mean_absolute_percentage_error(y, y_predicted)
-    return (mape * 100).round(5)
 
 def mean_absolute_percentage_error(y_true, y_pred): 
     y_true, y_pred = np.array(y_true), np.array(y_pred)

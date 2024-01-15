@@ -1,6 +1,8 @@
 import time
-import numpy as np
 import pandas as pd
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.linear_model import Ridge
@@ -8,10 +10,11 @@ from ElectricityConsumptionForecast.utils.message_response import MessageRespons
 from ElectricityConsumptionForecastRepository.repositories.train_data_repository import TrainRepository
 from ElectricityConsumptionForecastRepository.repositories.weather_data_repository import WeatherRepository
 from ElectricityConsumptionForecastService.ann_bundle.ann_regression import AnnRegression
-from ElectricityConsumptionForecastService.ann_bundle.custom_preparer import CustomPreparer
 
 # NUMBER_OF_COLUMNS = 20
 SHARE_FOR_TRAINING = 0.85
+MODEL_NAME = 'current_model11'
+FILE_PATH = f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}.keras"
 
 class TrainService:
     def __init__(self, repository=None):
@@ -52,18 +55,43 @@ class TrainService:
             data = data[(data['datetime'] >= start_date) & (data['datetime'] <= end_date)]
             data.drop('datetime', axis = 1, inplace= True)
 
-            # return MessageResponse(success=True,message="suca").to_json()
-            # preparer = CustomPreparer(data, len(data.columns), SHARE_FOR_TRAINING)
-            # trainX, trainY, testX, testY = preparer.prepare_for_training()
-            y_train = data['Load']
-            X_train = data.drop('Load', axis=1)
-            X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
-            # X_train.to_csv("X_train.csv")
-            ann_regression = AnnRegression()
+            features = data.drop("Load", axis=1)
+            target = data["Load"]
+
+            X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.15, random_state=42)
+
+            # Standardize numerical features
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+            X_test_scaled = scaler.transform(X_test)
+            
             time_begin = time.time()
-            model = ann_regression.get_compile_and_fit(X_train, y_train)
+
+            model = keras.Sequential([
+                layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+                layers.Dense(32, activation='relu', input_shape=(X_train.shape[1],)),
+                layers.Dense(16, activation='relu'),
+                layers.Dense(1)  # For regression, no activation function in the output layer
+            ])
+
+            # Compile the model
+            model.compile(optimizer='SGD', loss='mean_absolute_percentage_error')
+
+            # Train the model
+            model.fit(X_train_scaled, y_train, epochs=100, batch_size=20, validation_split=0.15)
             time_end = time.time()
-            ann_regression.save_model(model, f"ElectricityConsumptionForecastRepository/training_models/neural_network/neural_network.keras")
+            
+            ann_regression = AnnRegression()
+            ann_regression.save_model(model, FILE_PATH)
+
+            # # Evaluate the model on the test set
+            # loss = model.evaluate(X_test_scaled, y_test)
+            # print(f"Test Loss: {loss}%")
+
+            # ann_regression = AnnRegression()
+            # time_begin = time.time()
+            # ann_regression.compile_and_fit(trainX, trainY)
+            # time_end = time.time()
 
             return MessageResponse(success=True,message=f"Neural network trained successfully: Duration: {time_end - time_begin} seconds").to_json()
         except Exception as e:
@@ -86,3 +114,7 @@ def prepare_training_data_regression(data: pd.DataFrame):
     x_test_std.columns = list(x.columns)
 
     return x_train_std, x_test_std, y_train, y_test
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    y_true, y_pred = tf.squeeze(y_true), tf.squeeze(y_pred)
+    return tf.reduce_mean(tf.abs((y_true - y_pred) / y_true)) * 100
