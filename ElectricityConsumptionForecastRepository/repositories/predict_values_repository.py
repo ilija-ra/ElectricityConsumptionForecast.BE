@@ -1,8 +1,12 @@
 import sqlite3
+from django.db import connections
 import pandas as pd
 from ElectricityConsumptionForecast.utils.message_response import MessageResponse
 
 class PredictRepository:
+    def get_prediction_result(self):
+        return pd.read_sql('''SELECT * FROM PredictedForecastData''', connections['default'])
+
     def save_results_to_db(self, data : pd.DataFrame):
         try:
             conn = sqlite3.connect('db.sqlite3')

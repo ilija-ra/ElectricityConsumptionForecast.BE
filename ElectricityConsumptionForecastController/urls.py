@@ -13,5 +13,6 @@ urlpatterns = [
     path('train/regression', train_data_controller.train_with_regression, name='train-with-regression'),
     path('predict/regression', predict_data_controller.predict_with_regression, name='predict-with-regression'),
     path('train/neural_network', train_data_controller.train_with_neural_network, name='train-with-neural-network'),
-    path('predict/neural_network', predict_data_controller.predict_with_neural_network, name='predict-with-neural-network')
+    path('predict/neural_network', predict_data_controller.predict_with_neural_network, name='predict-with-neural-network'),
+    path('predict/get_result', predict_data_controller.get_prediction_result, name='get-predict-result')
 ]

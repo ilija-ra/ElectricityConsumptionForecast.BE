@@ -21,6 +21,9 @@ class PredictService:
         self.preprocessed_repository = repository or WeatherRepository()
         self.predict_repository = repository or PredictRepository()
 
+    def get_prediction_result(self):
+        return MessageResponse(success=True,message="Prediction result data",data=self.predict_repository.get_prediction_result()).to_json()
+
     def predict_with_regression(self, start_date, number_of_days):
         try:
             data = self.preprocessed_repository.get_all()

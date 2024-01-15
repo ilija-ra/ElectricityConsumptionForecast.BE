@@ -25,3 +25,12 @@ def predict_with_neural_network(request):
         return JsonResponse(result, status=200, safe = False)
     except Exception as e:
         return JsonResponse({'Error Message': str(e)}, status=400, safe=False)
+    
+@api_view(['GET'])
+def get_prediction_result(request):
+    predict_service = PredictService()
+    try:
+        result = predict_service.get_prediction_result()
+        return JsonResponse(result, status=200, safe = False)
+    except Exception as e:
+        return JsonResponse({'Error Message': str(e)}, status=400, safe=False)
