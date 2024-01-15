@@ -13,8 +13,8 @@ from ElectricityConsumptionForecastRepository.repositories.predict_values_reposi
 from ElectricityConsumptionForecastService.ann_bundle.ann_regression import AnnRegression
 
 SHARE_FOR_TRAINING = 0.85
-MODEL_NAME = 'primary_neural_network'
-FILE_PATH = f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}11.keras"
+MODEL_NAME = 'current_model'
+FILE_PATH = f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}.keras"
 
 class PredictService:
     def __init__(self, repository=None, service=None):
@@ -71,16 +71,15 @@ class PredictService:
             end_date = start_date + pd.Timedelta(days=number_of_days)
 
             data = data[(data['datetime'] >= start_date) & (data['datetime'] <= end_date)]
+            datetime_col = data['datetime']
             data.drop('datetime', axis=1, inplace=True)
 
-            target = data['Load']
-            features = data.drop('Load', axis = 1)
-
-            X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.15, random_state=42)
+            y_test = data['Load']
+            x_test = data.drop('Load', axis = 1)
 
             scaler = StandardScaler()
-            X_train_scaled = scaler.fit_transform(X_train)
-            X_test_scaled = scaler.transform(X_test)
+            X_test_scaled = scaler.fit_transform(x_test)
+            # X_test_scaled = scaler.transform(X_train_scaled)
 
             ann_regression = AnnRegression()
             model = ann_regression.get_model_from_path(FILE_PATH)
@@ -90,6 +89,11 @@ class PredictService:
             y_predicted = tf.cast(y_predicted, dtype=tf.float32)
 
             mape_value = mean_absolute_percentage_error(y_test, y_predicted)
+
+            result_df = pd.concat([datetime_col.reset_index(drop=True), pd.Series(np.ravel(y_predicted), name='predicted_load')], axis=1)
+
+            self.predict_repository.save_results_to_db(result_df)
+            self.predict_repository.save_results_to_csv(result_df)
 
             print(mape_value)
 

@@ -13,7 +13,7 @@ from ElectricityConsumptionForecastService.ann_bundle.ann_regression import AnnR
 
 # NUMBER_OF_COLUMNS = 20
 SHARE_FOR_TRAINING = 0.85
-MODEL_NAME = 'current_model11'
+MODEL_NAME = 'current_model'
 FILE_PATH = f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}.keras"
 
 class TrainService:
@@ -55,43 +55,29 @@ class TrainService:
             data = data[(data['datetime'] >= start_date) & (data['datetime'] <= end_date)]
             data.drop('datetime', axis = 1, inplace= True)
 
-            features = data.drop("Load", axis=1)
-            target = data["Load"]
-
-            X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.15, random_state=42)
-
-            # Standardize numerical features
+            y_train = data["Load"]
+            x_train = data.drop("Load", axis=1)
+ 
             scaler = StandardScaler()
-            X_train_scaled = scaler.fit_transform(X_train)
-            X_test_scaled = scaler.transform(X_test)
+            X_train_scaled = scaler.fit_transform(x_train)
+            # X_test_scaled = scaler.transform(X_test)
             
             time_begin = time.time()
 
             model = keras.Sequential([
-                layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
-                layers.Dense(32, activation='relu', input_shape=(X_train.shape[1],)),
+                layers.Dense(64, activation='relu', input_shape=(x_train.shape[1],)),
+                layers.Dense(32, activation='relu', input_shape=(x_train.shape[1],)),
                 layers.Dense(16, activation='relu'),
-                layers.Dense(1)  # For regression, no activation function in the output layer
+                layers.Dense(1)
             ])
 
-            # Compile the model
             model.compile(optimizer='SGD', loss='mean_absolute_percentage_error')
-
-            # Train the model
             model.fit(X_train_scaled, y_train, epochs=100, batch_size=20, validation_split=0.15)
+            
             time_end = time.time()
             
             ann_regression = AnnRegression()
             ann_regression.save_model(model, FILE_PATH)
-
-            # # Evaluate the model on the test set
-            # loss = model.evaluate(X_test_scaled, y_test)
-            # print(f"Test Loss: {loss}%")
-
-            # ann_regression = AnnRegression()
-            # time_begin = time.time()
-            # ann_regression.compile_and_fit(trainX, trainY)
-            # time_end = time.time()
 
             return MessageResponse(success=True,message=f"Neural network trained successfully: Duration: {time_end - time_begin} seconds").to_json()
         except Exception as e:
