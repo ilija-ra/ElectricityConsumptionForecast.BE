@@ -52,13 +52,18 @@ class TrainService:
             data = data[(data['datetime'] >= start_date) & (data['datetime'] <= end_date)]
             data.drop('datetime', axis = 1, inplace= True)
 
-            preparer = CustomPreparer(data, len(data.columns), SHARE_FOR_TRAINING)
-            trainX, trainY, testX, testY = preparer.prepare_for_training()
-
+            # return MessageResponse(success=True,message="suca").to_json()
+            # preparer = CustomPreparer(data, len(data.columns), SHARE_FOR_TRAINING)
+            # trainX, trainY, testX, testY = preparer.prepare_for_training()
+            y_train = data['Load']
+            X_train = data.drop('Load', axis=1)
+            X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
+            # X_train.to_csv("X_train.csv")
             ann_regression = AnnRegression()
             time_begin = time.time()
-            ann_regression.compile_and_fit(trainX, trainY)
+            model = ann_regression.get_compile_and_fit(X_train, y_train)
             time_end = time.time()
+            ann_regression.save_model(model, f"ElectricityConsumptionForecastRepository/training_models/neural_network/neural_network.keras")
 
             return MessageResponse(success=True,message=f"Neural network trained successfully: Duration: {time_end - time_begin} seconds").to_json()
         except Exception as e:

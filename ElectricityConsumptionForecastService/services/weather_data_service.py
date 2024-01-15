@@ -16,7 +16,6 @@ class WeatherService:
         return MessageResponse(success=True,message="Getting preprocessed data was successful",data=self.weather_repository.get_all()).to_json()
 
     def save(self, data):
-        
         merged_weather_data_df = merged_files_as_dataframe(data)
         preprocessed_data_df = preprocess_data(merged_weather_data_df, self.load_repository.get_all())
 

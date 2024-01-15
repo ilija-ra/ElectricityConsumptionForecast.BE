@@ -21,6 +21,12 @@ class AnnRegression(AnnBase):
         model = keras.models.load_model(path)
         return model
 
+    def get_compile_and_fit(self, trainX, trainY):
+        self.model = self.get_model()
+        self.model.compile(loss=self.cost_function, optimizer=self.optimizer)
+        self.model.fit(trainX, trainY, epochs=self.epoch_number, batch_size=self.batch_size_number, verbose=self.verbose)
+        return self.model
+
     def save_model(self, model, path):
         model.save(path)
 

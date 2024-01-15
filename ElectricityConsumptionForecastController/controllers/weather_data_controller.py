@@ -31,8 +31,8 @@ def get_all(request):
 def save(request):
     weather_service = WeatherService()
     try:
-        result = weather_service.save(request.FILES.getlist('files'))
-        return JsonResponse(result, safe = False)
+        result = weather_service.save(request.FILES.getlist('rawForecastWeatherData'))
+        return JsonResponse(result, status=200, safe = False)
     except Exception as e:
         return JsonResponse({'Error Message': str(e)}, status=400)
 

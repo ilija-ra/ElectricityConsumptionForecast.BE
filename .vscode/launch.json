@@ -17,10 +17,10 @@
         },
         {
             "name": "ElectricityConsumptionForecast",
-            "python": "/GithubRepositoriesFaculty/ElectricityConsumptionForecast/ElectricityConsumptionForecast.BE/ECF/Scripts/python.exe",
+            "python": "/GithubRepositoriesFaculty/ElectricityConsumptionForecast.BE/ECF/Scripts/python.exe",
             "type": "python",
             "request": "launch",
-            "program": "/GithubRepositoriesFaculty/ElectricityConsumptionForecast/ElectricityConsumptionForecast.BE/manage.py",
+            "program": "/GithubRepositoriesFaculty/ElectricityConsumptionForecast.BE/manage.py",
             "console": "internalConsole",
             "args": [
                 "runserver"
