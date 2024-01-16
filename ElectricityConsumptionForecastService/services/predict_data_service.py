@@ -9,16 +9,19 @@ from sklearn.metrics import mean_absolute_percentage_error
 from ElectricityConsumptionForecast.utils.message_response import MessageResponse
 from ElectricityConsumptionForecastRepository.repositories.train_data_repository import TrainRepository
 from ElectricityConsumptionForecastRepository.repositories.weather_data_repository import WeatherRepository
+from ElectricityConsumptionForecastRepository.repositories.a_weather_data_repository import AWeatherRepository
 from ElectricityConsumptionForecastRepository.repositories.predict_values_repository import PredictRepository
 from ElectricityConsumptionForecastService.ann_bundle.ann_regression import AnnRegression
 
 SHARE_FOR_TRAINING = 0.85
 MODEL_NAME = 'current_model'
 FILE_PATH = f"ElectricityConsumptionForecastRepository/training_models/neural_network/{MODEL_NAME}.keras"
+PRIMARY_FILE_PATH = f"ElectricityConsumptionForecastRepository/training_models/neural_network/primary_neural_network.keras"
 
 class PredictService:
     def __init__(self, repository=None, service=None):
         self.preprocessed_repository = repository or WeatherRepository()
+        self.a_preprocessed_repository = repository or AWeatherRepository()
         self.predict_repository = repository or PredictRepository()
 
     def get_prediction_result(self):
@@ -75,7 +78,10 @@ class PredictService:
 
             data = data[(data['datetime'] >= start_date) & (data['datetime'] <= end_date)]
             datetime_col = data['datetime']
+            
             data.drop('datetime', axis=1, inplace=True)
+            data['Load'] = data['Load'].astype(float)
+            data['Load'].interpolate(inplace = True)
 
             y_test = data['Load']
             x_test = data.drop('Load', axis = 1)
@@ -92,6 +98,8 @@ class PredictService:
             y_predicted = tf.cast(y_predicted, dtype=tf.float32)
 
             mape_value = mean_absolute_percentage_error(y_test, y_predicted)
+            
+            print(mape_value)
 
             result_df = pd.concat([datetime_col.reset_index(drop=True), pd.Series(np.ravel(y_predicted), name='predicted_load')], axis=1)
 
@@ -99,6 +107,36 @@ class PredictService:
             self.predict_repository.save_results_to_csv(result_df)
 
             print(mape_value)
+
+            return MessageResponse(success=True, message="Prediction Successfully executed").to_json()
+        except Exception as e:
+            return MessageResponse(success=False, message="Failed to predict data with neural network", errors=str(e)).to_json()
+
+    def predict_with_primary_neural_network(self):
+        try:
+            data = self.a_preprocessed_repository.a_get_all()
+            
+            if data.empty:
+                return MessageResponse(success=False, message="Could not receive preprocessed data from a database").to_json()
+
+            datetime_col = data['datetime']
+            data.drop('datetime', axis=1, inplace=True)
+
+            scaler = StandardScaler()
+            X_test_scaled = scaler.fit_transform(data)
+            # X_test_scaled = scaler.transform(X_train_scaled)
+
+            ann_regression = AnnRegression()
+            model = ann_regression.get_model_from_path(PRIMARY_FILE_PATH)
+            y_predicted = model.predict(X_test_scaled)
+
+            y_predicted = tf.cast(y_predicted, dtype=tf.float32)
+
+            result_df = pd.concat([pd.Series(np.ravel(datetime_col), name='datetime'), 
+                                   pd.Series(np.ravel(y_predicted), name='predicted_load')], axis=1)
+
+            self.predict_repository.save_results_to_csv(result_df)
+            self.predict_repository.save_results_to_db(result_df)
 
             return MessageResponse(success=True, message="Prediction Successfully executed").to_json()
         except Exception as e:

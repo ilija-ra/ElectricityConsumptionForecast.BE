@@ -2,6 +2,7 @@ import time
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
+from keras.optimizers import SGD
 from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
@@ -55,9 +56,12 @@ class TrainService:
             data = data[(data['datetime'] >= start_date) & (data['datetime'] <= end_date)]
             data.drop('datetime', axis = 1, inplace= True)
 
+            data['Load'] = data['Load'].astype(float)
+            data['Load'].interpolate(inplace = True)
+            
             y_train = data["Load"]
             x_train = data.drop("Load", axis=1)
- 
+            
             scaler = StandardScaler()
             X_train_scaled = scaler.fit_transform(x_train)
             # X_test_scaled = scaler.transform(X_test)
@@ -66,13 +70,14 @@ class TrainService:
 
             model = keras.Sequential([
                 layers.Dense(64, activation='relu', input_shape=(x_train.shape[1],)),
-                layers.Dense(32, activation='relu', input_shape=(x_train.shape[1],)),
+                layers.Dense(64, activation='relu'),
+                layers.Dense(32, activation='relu'),
                 layers.Dense(16, activation='relu'),
                 layers.Dense(1)
             ])
-
+            
             model.compile(optimizer='SGD', loss='mean_absolute_percentage_error')
-            model.fit(X_train_scaled, y_train, epochs=100, batch_size=20, validation_split=0.15)
+            model.fit(X_train_scaled, y_train, epochs=150, batch_size=10, validation_split=0.2)
             
             time_end = time.time()
             

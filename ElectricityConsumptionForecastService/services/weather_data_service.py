@@ -41,7 +41,7 @@ def preprocess_data(weather_df: pd.DataFrame, load_df: pd.DataFrame) -> pd.DataF
         load_df = load_df[load_df.Name == 'N.Y.C.']
         load_df['datetime'] = pd.to_datetime(load_df['datetime'])
         load_df = load_df[(load_df['datetime'].dt.minute == 0) & (load_df['datetime'].dt.second == 0)]
-        load_df.drop(['id', 'Name', 'PTID'], axis = 1, inplace= True)
+        load_df.drop(['id', 'Name', 'PTID', 'TimeZone'], axis = 1, inplace= True)
         load_df['Load'].interpolate(inplace = True)
 
         # # # Weather type file preprocessing
@@ -81,13 +81,13 @@ def preprocess_data(weather_df: pd.DataFrame, load_df: pd.DataFrame) -> pd.DataF
         weather_load_df['hour'] = weather_load_df['datetime'].dt.hour
         weather_load_df['day_of_week'] = weather_load_df['datetime'].dt.dayofweek + 1
         
-        # Calculate the average consumption for each day
-        weather_load_df['Load'] = weather_load_df['Load'].astype(float)
-        daily_avg_load = weather_load_df.groupby(weather_load_df['datetime'].dt.date)['Load'].mean()
+        # # Calculate the average consumption for each day
+        # weather_load_df['Load'] = weather_load_df['Load'].astype(float)
+        # daily_avg_load = weather_load_df.groupby(weather_load_df['datetime'].dt.date)['Load'].mean()
         
-        # Merge the daily average consumption back to the original DataFrame
-        weather_load_df = weather_load_df.merge(daily_avg_load, left_on=weather_load_df['datetime'].dt.date, right_index=True, suffixes=('', '_avg_prev_day'))
-        weather_load_df.drop('key_0', axis = 1, inplace= True)
+        # # Merge the daily average consumption back to the original DataFrame
+        # weather_load_df = weather_load_df.merge(daily_avg_load, left_on=weather_load_df['datetime'].dt.date, right_index=True, suffixes=('', '_avg_prev_day'))
+        # weather_load_df.drop('key_0', axis = 1, inplace= True)
         
         # Calculate the average temperature for each day
         daily_avg_temp = weather_load_df.groupby(weather_load_df['datetime'].dt.date)['temp'].mean()
@@ -98,8 +98,8 @@ def preprocess_data(weather_df: pd.DataFrame, load_df: pd.DataFrame) -> pd.DataF
         
         # weather_load_df.drop('datetime', axis = 1, inplace= True)
 
-        weather_load_df.loc[weather_load_df['TimeZone'] == "EDT", 'TimeZone'] = 1
-        weather_load_df.loc[weather_load_df['TimeZone'] == "EST", 'TimeZone'] = 2
+        # weather_load_df.loc[weather_load_df['TimeZone'] == "EDT", 'TimeZone'] = 1
+        # weather_load_df.loc[weather_load_df['TimeZone'] == "EST", 'TimeZone'] = 2
         weather_load_df = weather_load_df.round(2)
 
         return weather_load_df

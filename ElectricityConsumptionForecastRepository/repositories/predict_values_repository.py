@@ -23,7 +23,7 @@ class PredictRepository:
     
     def save_results_to_csv(self, data_to_save: pd.DataFrame):
         try:
-            data_to_save.to_csv("prediction_results.csv")
+            data_to_save.to_csv("prediction_results.csv", index=False)
             return MessageResponse(success=True,message="Predicted results successfully saved to csv file").to_json()
         except Exception as e:
             return MessageResponse(success=False,message="Error occured while saving results to csv file",errors=str(e)).to_json()
