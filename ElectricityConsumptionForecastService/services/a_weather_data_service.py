@@ -16,7 +16,7 @@ class AWeatherService:
     def a_save(self, data):
         merged_weather_data_df = a_merged_files_as_dataframe(data)
         preprocessed_data_df = a_preprocess_data(merged_weather_data_df)
-    
+        
         if preprocessed_data_df.empty:
             return MessageResponse(success=False,message="Error occured while executing preprocessing operation on data").to_json()
 
@@ -34,8 +34,9 @@ def a_merged_files_as_dataframe(files: any) -> pd.DataFrame:
 
 def a_preprocess_data(weather_df: pd.DataFrame) -> pd.DataFrame:
     try:
-        # # # Weather type file preprocessing
-        weather_df.drop(['name', 'preciptype', 'severerisk', 'precipprob', 'windgust', 'solarenergy', 'solarradiation', 'precip', 'snow', 'snowdepth',], axis = 1, inplace= True)
+        # weather_df = weather_df['name', 'datetime', 'temp', 'feelslike', 'dew', 'humidity', 'precip', 'precipprob', 'preciptype', 'snow', 'snowdepth', 'windgust', 'windspeed', 'winddir', 'sealevelpressure', 'cloudcover', 'visibility', 'solarradiation', 'solarenergy', 'uvindex', 'severerisk', 'conditions']
+        # # # # Weather type file preprocessing
+        weather_df.drop(['name', 'preciptype', 'severerisk', 'precipprob', 'windgust', 'solarenergy', 'solarradiation', 'precip', 'snow', 'snowdepth', 'icon', 'stations'], axis = 1, inplace= True)
         weather_df['datetime'] = pd.to_datetime(weather_df['datetime'])
         weather_df['temp'] = weather_df['temp'].astype(float)
         weather_df.loc[weather_df['temp'] > 134, 'temp'] = np.nan
