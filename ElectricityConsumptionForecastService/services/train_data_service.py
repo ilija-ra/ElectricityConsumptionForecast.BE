@@ -76,8 +76,8 @@ class TrainService:
                 layers.Dense(1)
             ])
             
-            model.compile(optimizer='SGD', loss='mean_absolute_percentage_error')
-            model.fit(X_train_scaled, y_train, epochs=150, batch_size=10, validation_split=0.2)
+            model.compile(optimizer='rmsprop', loss='mean_absolute_percentage_error')
+            model.fit(X_train_scaled, y_train, epochs=50, batch_size=16, validation_split=0.2)
             
             time_end = time.time()
             
